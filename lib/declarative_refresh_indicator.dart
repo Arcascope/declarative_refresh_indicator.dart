@@ -3,6 +3,7 @@ library declarative_refresh_indicator;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// A declarative [RefreshIndicator] alternative.
 ///
@@ -119,19 +120,21 @@ class _DeclarativeRefreshIndicatorState
 
   /// Hide the indicator.
   void _hide() {
-    assert(_showing,
-        'Hide called, but not showing! Did you call setState in initState?');
-    assert(!_completer!.isCompleted,
-        'The completer should never exist in a completed state!');
-    _completer!.complete();
-    _completer = null;
+    if (_showing) {
+      _completer!.complete();
+      _completer = null;
+    } else {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _hide();
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
     // If the indicator should be shown initially, show it.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
       if (widget.refreshing) _show();
     });
   }
